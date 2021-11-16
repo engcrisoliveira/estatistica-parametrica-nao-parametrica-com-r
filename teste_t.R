@@ -1,104 +1,136 @@
-# 1. Pacotes -----
+#Estatística Paramétrica e não Paramétrica
+#Dia 2: Exercício teste-t para amostras independentes
+#Professora: Edneide Ramalho
 
+
+#1. Importando as bibliotecas -----
 library(tidyverse)
 library(ggpubr)
 library(rstatix)
-library(dplyr)
 
-# 2. Carregando a base de dados -----
+#Erro ao importar a biblioteca tidyverse: there is no package called ‘reprex’
+#Para corrigir o erro, instalei a biblioteca "reprex"
+install.packages("reprex", dependencies = TRUE)
 
+#2. Importando os dados -----
 library(readxl)
-genderweight <- read_excel("C:/Users/criso/Desktop/estatística_p/genderweight.xlsx")
-View(genderweight)
+tooth_growth <- read_excel("ToothGrowth.xlsx")
 
+#3. Teste t -----
 
-glimpse(genderweight)
+#3.1 Estatística descritiva -----
 
-table(genderweight$group)
+#Visão geral das variáveis na base de dados
 
-#Símbolo %>% é o Pipe
-#Atalho control + shift + M
-# %>% 
+#Erro ao chamar a função glimpse: could not find function "glimpse"
+#Para contornar o erro importei a biblioteca "dplyr" antes de rodar a função glimpse
+library(dplyr)
+glimpse(tooth_growth)
 
-#Exemplo do uso do pipe
-x <- c(12, 15, 17, 18, 18)
-mean(x)
+#Quantas observações há em cada grupo de suplemento?
 
-x %>% mean()
+#Fazendo uma tabela para a variável suplemento
+tooth_growth %>%
+  sample_n(5)
+table(tooth_growth$supp)
 
-#3. Estatística descritiva------
+#Resposta: Há 30 observações há em cada grupo de suplemento
 
-names(genderweight)
+#Gerar as estatísticas de resumo para a variável len agrupada por supp
+tooth_growth %>% 
+  group_by(supp) %>% 
+  get_summary_stats(len, type="common") #para "n", the number of individuals
 
+#Usar média e desvio padrão como as estatísticas descritivas escolhidas
 
-genderweight %>%
-  groupby(group) %>%
-  get_summary_stats(weight, type = "mean_sd")
+#média
+#OJ: comprimento médio = 20.7
+#VC: comprimento médio = 17.0
 
-# 4. Visualização -------
+#desvio padrão
+#OJ: desvio padrão = 6.61
+#VC: desvio padrão = 8.27
 
-genderweight %>% 
-ggboxplot(x="group", y="weight", add = "jitter", bxp.errobar = TRUE)
+#3.2 Primeira Visualização -----
 
-# 5. Checando suposições/ pressupostos do teste --------
+#Gerar um gráfico (boxplot) para comparar a variável "len" em relação à "supp"
 
-## 5.1 Outliers extremos ------
-genderweight %>% 
-  group_by(group) %>% 
-  identify_outliers(weight)
+#Visualizando os dados
+bxp_supp<- tooth_growth %>% 
+  ggboxplot(x="supp", y="len")
+bxp_supp
 
-## 5.2 Normalidade ------
+#Inserindo barra de erros
+bxp_supp <- tooth_growth %>% 
+  ggboxplot(x="supp", y="len", add="jitter")
+bxp_supp
 
-#Teste de Shapiro-Wilk
-genderweight %>% 
-  group_by(group) %>% 
-  shapiro_test(weight)
+#3.3 Suposições do teste -----
+  
+#Cheque se há outliers extremos nos dados
+tooth_growth %>% 
+  group_by(supp) %>% 
+  identify_outliers(len)
 
-#H0: dados normais
-#H1: dados não normais
+#Resultado: 0 linhas> (ou row.names de comprimento 0)
+#Ous seja, não há outliers extremos
 
-#p-valor < 0.05 ou 0.01
-# Os dados são normais!!!! \0/
+#Cheacar a normalidade dos dados entre os grupos usando o teste de Shapiro-Wilk
+tooth_growth %>% 
+  group_by(supp) %>% 
+  shapiro_test(len)
 
-# QQplot
+#Resultado:
+#OJ: p-value = 0,0236
+#VC: p-value = 0,428
 
-genderweight %>% 
-  ggqqplot(x="weight", facet.by= "group") 
+#Checar a normalidade dos dados entre os grupos usando o QQplot
 
-## 5.3 Igualdade de variância-------
-genderweight %>% 
-  levene_test(weight ~ group)
+#Checando a normalidade com QQ plot
+tooth_growth %>% 
+  ggqqplot(x="len", facet.by="supp")
 
-# p < 0.05 -> As variâncias não são iguais
+#Podemos observar que o qqplot mostra que os dados do suplemento "OJ" estão mais distantes da linha
+#Além disso, o (p-value) resultante do teste de shapiro é menor que 0.05
+#Isso quer dizer que, tanto o qqplot quanto o teste de Shapiro_Wilk
+#mostram que os dados não são normalmente distribuídos
 
-# 6. Computando o teste t -------
-resultado_do_teste_t <- genderweight %>% 
-  t_test(weight ~ group, var.equal = FALSE) %>% 
+#Podemos observar que o qqplot mostra que os dados do suplemento "VC" estão mais próximos da linha
+#Além disso, o (p-value) resultante do teste de shapiro é maior que 0.05
+#Isso quer dizer que, tanto o qqplot quanto o teste de Shapiro_Wilk
+#mostram que os dados são normalmente distribuídos
+
+#Checar se ambos os grupos de suplemento tem variâncias iguais
+
+#Para avaliar a igualdade de variâncias, podemos usar o teste de Levene
+tooth_growth %>% 
+  levene_test(len ~ supp)
+
+#O p-value é 0,275, ou seja, as variâncias são iguais
+#Pois, as variância são iguais sempre q o p-value for maior que 0,05
+
+#Calculando o tamanho do efeito
+teste_comprimento_suplemento <- tooth_growth %>% 
+  t_test(len ~ supp, var.equal = FALSE) %>% 
   add_significance()
+teste_comprimento_suplemento
 
-# tamanho do efeito
-genderweight %>% 
-  cohens_d(weight ~ group)
+#O teste_comprimento_suplemento, tem p-value = 0,0606, ou seja, 
+#o resultado do teste informa que o efeito é não significativo.
 
-# d = 6.57 (tamanho do efeito grande!!)
+#Finalizando a visualização inicial, com a modificação do título dos eixos
+#e adicionando as informações do teste realizado
 
-#gráfico final
-resultado_do_teste_t <- resultado_do_teste_t %>% 
-  add_xy_position(x="group")
+teste_comprimento_suplemento <-  teste_comprimento_suplemento %>% 
+  add_xy_position(x= "supp")
 
-bxp_peso <- genderweight %>% 
-  ggboxplot(x="group", y= "weight", add="jitter", bxp.errorbar = TRUE)
+bxp_supp +
+  stat_pvalue_manual(teste_comprimento_suplemento, tip.length = 0) +
+  labs(subtitle = get_test_label(teste_comprimento_suplemento, detailed = TRUE),
+       x = "Suplemento", y= "Comprimento (cm)")
 
-bxp_peso
+#Resultado do Teste
 
-# Melhorar o gráfico
-bxp_peso +
-  stat_pvalue_manual(resultado_do_teste_t, tip.length = 0) +
-  labs(subtitle = get_test_label(resultado_do_teste_t, detailed = TRUE, (x="Gênero", y = "Peso")))
-    ggsave("teste_t.jpg")
-#?ggsave
-  
-  
-  
-
-
+#Resultado: t(55.31) = 1.92, p = 0.061, n=60
+#O teste t de Welch para duas amostras foi utilizado e mostrou que a diferença entre os 
+#comprimentos foi estatiscamente significativa
