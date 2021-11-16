@@ -1,72 +1,75 @@
-###############################################
-# Anova e Anova com medidas repetidas no R 
-# Professora: Elaine Marques
-# Monitora: Macileide Oliveira
-###############################################
+#Estatística paramétrica a não paramétrica
+#Dia 3: Anova e Anova com medidas repetidas no R 
+#Professora: Elaine Marques
+#Monitora: Macileide Oliveira
 
-# Utilize a fun??o getwd para verificar o diret?rio de trabalho:
+
+#1. Importando as bibliotecas -----
+install.packages("car") 
+library(car) 
+
+#2. Importando os dados -----
+
+#Vendo o caminho de arquivo do diretório de trabalho atual
 getwd()
-# Utilize a fun??o setwd para mudar o seu diret?rio de trabalho:
-setwd('C:/Users/criso/Desktop/estatística_p/aula3_5nov')
 
-# Usando seus dados no R
-# Se estiver no formato .csv, use:
+#Definindo o diretório de trabalho para dir
+setwd("C:/Users/criso/Desktop/estatística_univasf/aula3_5nov/")
+
 medicamento <- read.csv("anova1.csv",sep=";", header=T)
 medicamento
-
-# Se estiver no formato .txt, use:
-# medicamento2 <- read.delim("anova.txt")
-
-# OBS: lembre-se de especificar o argumento sep = ";"
-# Caso a configura??o do seu computador esteja com separador decimal como ",", 
-#chame a tabela da seguinte maneira no R:
-#medicamento3 <- read.csv2("anova.csv", dec = ",")
 
 # Visualize sua planilha de dados
 View(medicamento)
 
-#Aplicando a Anova para um ?nico fator
-#A fun??o do R que executa a ANOVA ? a aov ou lm.
+#3. Aplicando a Anova para um único fator -----
+
+#A função do R que executa a ANOVA é a aov ou lm.
 # exemplo: aov(V.Dependente ~ V.Independente , data=dados)
 modeloanova <- aov(HORAS ~ REMEDIO, data =medicamento)
 modeloanova
 
-# Fun??o summary forncece mais informa??es em rela??o ao modelo
-summary(modeloanova)
+#Resultado: Residual standard error: 2.645751
 
-###################################################################
+# Função summary forncece mais informações em relação ao modelo
+summary(modeloanova)
 
 #variável dependente: HORAS
 #Aplicando a Anova para dois fatores
 modeloanova2 =  aov(HORAS ~ REMEDIO * SEXO, data=medicamento)
 modeloanova2
 
-#deu o mesmo resultado, isso significa que a variável sexo não interfere no resultado
+#Resultado: Residual standard error: 2.645751
+#Apresentou o mesmo resultado, isso significa que a variável sexo não interfere no resultado
 
 summary(modeloanova2)
 
-#Identifique se existe difiren?a entre os grupos
+#Identifique se existe difirença entre os grupos
 tukey = TukeyHSD(modeloanova2)
 tukey
 plot(tukey)
 
-# Testando as premissas da ANOVA
+#Testando as premissas da ANOVA
 
-# 1. Homogeneidade das amostras
-# Para homogeneidade de vari?ncia entre os grupos.
-# Para esta premissa ? necess?rio instalar o pacote car
-install.packages("car") #instalando o pacote
-library(car) #carregando o pacote exigido
-leveneTest(HORAS ~ REMEDIO, data =medicamento)
+#3.1. Homogeneidade das amostras -----
 
-# 2. Normalidade dos res?duos
-# A premissa da ANOVA referente a normalidade dos res?duos pode ser 
-# testada atrav?s do teste de Shapiro-Wilk:
-#H0 = distribui??o dos dados = normal --> p >0.05
-#H1 = distribui??o dos dados diferente normal --> p >0.05
+#Para homogeneidade de variância entre os grupos
+leveneTest(HORAS ~ REMEDIO, data = medicamento)
+
+#3.2. Normalidade dos resíduos -----
+
+#A premissa da ANOVA referente à normalidade dos resíduos pode ser 
+#testada através do teste de Shapiro-Wilk:
+
+#H0 = distribuição dos dados = normal --> p >0.05
+#H1 = distribuição dos dados diferente normal --> p >0.05
 shapiro.test(resid(modeloanova))
 
-###################################################
+#Resultado:W = 0.93962, p-value = 0.2359
+
+#Nosso valor de p (p-value) é maior que 0.05 (5%) e por isso, aceitamos H0 (hipótese nula)
+#Logo existem evidências que os dados seguem uma distribuição normal
+#Neste caso, devemos usar testes paramétricos
 
 #ANOVA DE MEDIDAS REPETIDAS
 avalia<-c(2,5,1,7,2,6,4,7,3,9,4,8,3,5,1,9,6,8,3,6,2,8,1,4)
@@ -85,10 +88,3 @@ juiz4<-c(3,6,2,8,1,4)
 dados<-data.frame(juiz1,juiz2,juiz3, juiz4)
 cronbach.alpha(dados, standardized = FALSE, CI = TRUE, 
                probs = c(0.025, 0.975), B = 1000, na.rm = FALSE)
-
-
-
-
-
-
-
